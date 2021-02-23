@@ -1,0 +1,12 @@
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\bin\Debug\ModBusORM.dll
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\bin\Debug\ModBusORM.pdb
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\obj\Debug\ModBusORM.csprojAssemblyReference.cache
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\obj\Debug\ModBusORM.csproj.CoreCompileInputs.cache
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\obj\Debug\ModBusORM.dll
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\obj\Debug\ModBusORM.pdb
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\ModBusORM\bin\Debug\ModBusORM.dll
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\ModBusORM\bin\Debug\ModBusORM.pdb
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\ModBusORM\obj\Debug\ModBusORM.csprojAssemblyReference.cache
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\ModBusORM\obj\Debug\ModBusORM.csproj.CoreCompileInputs.cache
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\ModBusORM\obj\Debug\ModBusORM.dll
+E:\ADS\ADSShareDll\tdShareDll\ModBusORM\ModBusORM\obj\Debug\ModBusORM.pdb
