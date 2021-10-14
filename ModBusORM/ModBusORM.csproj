@@ -58,6 +58,7 @@
     <Compile Include="ModbusConnection.cs" />
     <Compile Include="ModbusDevice.cs" />
     <Compile Include="Models\ModBusSendTag.cs" />
+    <Compile Include="Models\StorageAddr.cs" />
     <Compile Include="Port\IPPort.cs" />
     <Compile Include="Port\SerialPort.cs">
       <SubType>Component</SubType>

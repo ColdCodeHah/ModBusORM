@@ -33,13 +33,36 @@ namespace ModBusORM
                     {
                         packSend.Add(new ModBusSendTag { Start = attr.Addr });
                     }
-                    packSend.Last().Length += storageSize;
+                    packSend.Last().StorageSize = attr.Addr-packSend.Last().Start+storageSize;
+                    packSend.Last().FieldCount += 1;
                     
                 }
             }
             return packSend;
         }
 
+        public static List<StorageAddr> SerializeStorage(this Type type)
+        {
+            var props = type.GetProperties();
+            List<StorageAddr> lstStorage = new List<StorageAddr>();
+            if (props.Length > 0)
+            {
+                for (var i = 0; i < props.Length; i++)
+                {
+                    var attr = (StorageAttribute)props[i].GetCustomAttributes(typeof(StorageAttribute), true)[0];
+                    var storage = new StorageAddr()
+                    {
+                        FieldName = props[i].Name,
+                        Addr = attr.Addr,
+                        Title = attr.Name,
+                        FieldLength = props[i].PropertyType.GetByteSize(),
+                        FieldType = props[i].PropertyType,
+                    };
+                    lstStorage.Add(storage);
+                }
+            }
+            return lstStorage;
+        }
 
     }
 }

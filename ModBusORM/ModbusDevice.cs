@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -94,19 +95,28 @@ namespace ModBusORM
             //以一次读取120个字
             var packLength = 120;
             var packSends = type.SendPackaging(packLength);
+            var storages = type.SerializeStorage();
             if (packSends?.Count > 0)
             {
+                var storageOffset = 0;
                 foreach (var s in packSends)
                 {
-                    byte[] bySend = _iProtocol.GetRead03Data(DeviceAddress,s.Start,s.Length.ToString(),CRCType,ref _tcpFlag);
-
+                    byte[] bySend = _iProtocol.GetRead03Data(DeviceAddress,s.Start,s.StorageSize.ToString(),CRCType,ref _tcpFlag);
                     _con.Com.Write(bySend);
 
-                    byte[] byRead = _iProtocol.ReadReturnRead(_con.Com,s.Length*2);
+                    byte[] byRead = _iProtocol.ReadReturnRead(_con.Com,s.StorageSize*2);
                     if (_iProtocol.CheckReceiveData(byRead))
                     {
                         var byValue = _iProtocol.GetCutReceiveData(byRead);
-                        packReceive.AddRange(byValue.ToList());
+                        List<byte> lstValue = new List<byte>();
+                        var startAddr = storages[storageOffset].Addr;
+                        for(var i = storageOffset; i < s.FieldCount+storageOffset; i++)
+                        {
+                            var offset = (storages[i].Addr - startAddr) * 2;
+                            lstValue.AddRange(ConvertHelper.GetArrayByPos(byValue,offset,storages[i].FieldLength));
+                        }
+                        storageOffset += s.FieldCount;
+                        packReceive.AddRange(lstValue);
                     }
 
                     Thread.Sleep(5);
@@ -130,13 +140,38 @@ namespace ModBusORM
         /// <returns>单寄存器返回写入成功的值，多寄存器返回写入成功寄存器的个数，失败返回null</returns>
         public object Write<TResult>(TStorage storage, Expression<Func<TStorage, TResult>> positions)
         {
+            var prop = positions.GetProperty();
+            var value = prop.GetValue(storage, null);
+            return _write(prop, value);
+        }
+
+        /// <summary>
+        /// 写单个参数，指定参数值
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="value"></param>
+        /// <param name="positions"></param>
+        /// <returns></returns>
+        public object Write<TResult>(object value, Expression<Func<TStorage, TResult>> positions)
+        {
+            var prop = positions.GetProperty();
+            return _write(prop, value);
+        }
+
+        public object Write(object value,string paraName)
+        {
+            var prop = typeof(TStorage).GetProperty(paraName);
+            if (prop != null)
+                return _write(prop, value);
+            throw new ComException($"结构体不存在{paraName}属性");
+        }
+
+        private object _write(PropertyInfo prop,object value)
+        {
             ready();
             object returnValue = null;
-            var prop = positions.GetProperty();
-
-            var value = prop.GetValue(storage, null);
             var attr = prop.GetAttribute<StorageAttribute>();
-            if(attr==null)
+            if (attr == null)
                 throw new ComException("结构体属性未指定StorageAttribute特性");
 
             var byteSize = prop.PropertyType.GetByteSize();
@@ -145,13 +180,13 @@ namespace ModBusORM
             byte[] bySend = null;
             if (storageSize < 2)//写单个寄存器
             {
-                bySend = _iProtocol.GetWrite06Data(DeviceAddress, attr.Addr, value.ToString(), ModBusHelper.convertDataType(prop.PropertyType), ByteOrder, CRCType,ref _tcpFlag);
+                bySend = _iProtocol.GetWrite06Data(DeviceAddress, attr.Addr, value.ToString(), ModBusHelper.convertDataType(prop.PropertyType), ByteOrder, CRCType, ref _tcpFlag);
             }
             else
             {
                 object[][] v = new object[1][];
                 v[0] = new object[] { ModBusHelper.convertDataType(prop.PropertyType), value };
-                bySend = _iProtocol.GetWrite10Data(DeviceAddress, attr.Addr, storageSize.ToString(), (byte)byteSize, v, ByteOrder, CRCType,ref _tcpFlag);
+                bySend = _iProtocol.GetWrite10Data(DeviceAddress, attr.Addr, storageSize.ToString(), (byte)byteSize, v, ByteOrder, CRCType, ref _tcpFlag);
             }
             _con.Com.Write(bySend);
             byte[] byRe = _iProtocol.ReadReturnWrite(_con.Com);
@@ -163,7 +198,7 @@ namespace ModBusORM
                 }
                 else
                 {
-                    returnValue=_iProtocol.ToWriteReturn(byRe, 1, typeof(UInt16));
+                    returnValue = _iProtocol.ToWriteReturn(byRe, 1, typeof(UInt16));
                 }
             }
             return returnValue;

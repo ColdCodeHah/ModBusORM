@@ -409,6 +409,7 @@ namespace ModBusORM
             {
                 data[13 + i] = btValue[i];
             }
+            data[5] = (byte)(7 + btValue.Length);
             return data;
         }
 

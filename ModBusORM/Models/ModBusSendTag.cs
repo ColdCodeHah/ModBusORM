@@ -8,6 +8,7 @@ namespace ModBusORM
     public class ModBusSendTag
     {
         public int Start;
-        public int Length;
+        public int StorageSize;
+        public int FieldCount;
     }
 }
