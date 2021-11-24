@@ -15,5 +15,6 @@ namespace ModBusORM
         }
         public int Addr { get; set; }
         public string Name { get; set; }
+        public bool IgnoreRead { get; set; }
     }
 }

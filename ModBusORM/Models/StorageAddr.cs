@@ -16,5 +16,6 @@ namespace ModBusORM
         public int FieldLength { get; set; }
 
         public Type FieldType { get; set; }
+        public bool IgnoreRead { get; set; }
     }
 }

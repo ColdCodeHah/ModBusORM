@@ -124,6 +124,8 @@ namespace ModBusORM
         /// <returns></returns>
         public static byte[] GetWrite06Data(byte addressNo, int beginPos, string value, DataType dataType, byte byteOrder, byte crcType)
         {
+            if (dataType != DataType.Int16Type && dataType != DataType.UInt16Type && dataType != DataType.UByteType)
+                throw new Exception("指定数据类型错误");
             byte[] data;
             if (dataType == DataType.Int16Type || dataType == DataType.UInt16Type)
             {
@@ -138,21 +140,21 @@ namespace ModBusORM
                     valueData = BitConverter.GetBytes(Convert.ToUInt16(value));
                 data[2] = beginData[1];
                 data[3] = beginData[0];//字节顺序0-1
-                if (byteOrder == 3)
-                {
-                    data[4] = valueData[1];
-                    data[5] = valueData[0];
-                }
-                else
+                if (byteOrder == 0)
                 {
                     data[4] = valueData[0];
                     data[5] = valueData[1];
                 }
-                byte[] crcBytes = ConvertHelper.CRC16(ConvertHelper.GetArrayByPos(data, 0, 6), crcType);//CRC校验
+                else
+                {
+                    data[4] = valueData[1];
+                    data[5] = valueData[0];
+                }
+                byte[] crcBytes =ConvertHelper.CRC16(ConvertHelper.GetArrayByPos(data, 0, 6), crcType);//CRC校验
                 data[6] = crcBytes[0];
                 data[7] = crcBytes[1];
             }
-            else if (dataType == DataType.UByteType)
+            else
             {
                 data = new byte[8];
                 data[0] = addressNo;//地址位
@@ -167,29 +169,6 @@ namespace ModBusORM
                 byte[] crcBytes = ConvertHelper.CRC16(ConvertHelper.GetArrayByPos(data, 0, 6), crcType);//CRC校验
                 data[6] = crcBytes[0];
                 data[7] = crcBytes[1];
-            }
-            else
-            {
-                data = new byte[10];
-                data[0] = addressNo;//地址位
-                data[1] = 6;//功能码 
-                byte[] valueData = null;
-                byte[] beginData = BitConverter.GetBytes(Convert.ToUInt16(beginPos - 1));
-                if (dataType == DataType.FloatType)
-                    valueData = BitConverter.GetBytes(Convert.ToSingle(value));
-                else if (dataType == DataType.IntType)
-                    valueData = BitConverter.GetBytes(Convert.ToInt32(value));
-                else
-                    valueData = BitConverter.GetBytes(Convert.ToUInt32(value));
-                data[2] = beginData[1];
-                data[3] = beginData[0];
-                data[4] = valueData[0];
-                data[5] = valueData[1];
-                data[6] = valueData[2];
-                data[7] = valueData[3];
-                byte[] crcBytes = ConvertHelper.CRC16(ConvertHelper.GetArrayByPos(data, 0, 6), crcType);//CRC校验
-                data[8] = crcBytes[0];
-                data[9] = crcBytes[1];
             }
             return data;
         }
@@ -564,24 +543,22 @@ namespace ModBusORM
             return false;
         }
 
-        public static List<byte> ExchangeOrder(List<byte> by, ushort length, byte order, Type type = null)
+        public static List<byte> ExchangeOrder(List<byte> by, ushort length, byte order, List<StorageAddr> lstStorage=null)
         {
             List<byte> list = new List<byte>();
             try
             {
                 byte[] arrBy = by.ToArray();
-                if (type != null)
-                {
-                    var fields = type.GetProperties();
-                    if (fields.Length > 0)
+                if (lstStorage != null)
+                {                    
+                    if (lstStorage.Count > 0)
                     {
                         int i = 0;
-                        foreach (var field in fields)
-                        {
-                            int size = Marshal.SizeOf(field.PropertyType);
-                            byte[] temp = GetDataByte(arrBy, order, i, size);
+                        foreach (var field in lstStorage)
+                        {                            
+                            byte[] temp = GetDataByte(arrBy, order, i, field.FieldLength);
                             list.AddRange(temp);
-                            i += size;
+                            i += field.FieldLength;
                         }
                     }
                 }

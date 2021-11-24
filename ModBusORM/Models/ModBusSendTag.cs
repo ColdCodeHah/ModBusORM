@@ -10,5 +10,6 @@ namespace ModBusORM
         public int Start;
         public int StorageSize;
         public int FieldCount;
+        public bool IgnoreSend;
     }
 }

@@ -14,26 +14,33 @@ namespace ModBusORM
         }
 
         public static List<ModBusSendTag> SendPackaging(this Type type, int packLength)
-        {            
-            var props = type.GetProperties();
+        {
+            var storages = SerializeStorage(type);                  
             List<ModBusSendTag> packSend = new List<ModBusSendTag>();
-            if (props.Length > 0)
+            if (storages?.Count > 0)
             {
-                //起始寄存器位置
-                var attrStar = (StorageAttribute)props[0].GetCustomAttributes(typeof(StorageAttribute), true)[0];
-                var packStart = attrStar.Addr;
-                packSend.Add(new ModBusSendTag { Start = packStart});
-
-                for (var i = 0; i < props.Length; i++)
+                //起始寄存器位置               
+                for (var i = 0; i < storages.Count; i++)
                 {
-                    var attr = (StorageAttribute)props[i].GetCustomAttributes(typeof(StorageAttribute), true)[0];                    
-                    var byteSize = props[i].PropertyType.GetByteSize();
+                    var storage = storages[i];
+                    var byteSize = storage.FieldLength;
                     var storageSize = (int)Math.Ceiling((float)byteSize / 2);
-                    if (attr.Addr - packSend.Last().Start + 1 + storageSize > packLength)
+                    if (packSend.Count == 0)
                     {
-                        packSend.Add(new ModBusSendTag { Start = attr.Addr });
+                        packSend.Add(new ModBusSendTag { Start = storage.Addr,IgnoreSend=storage.IgnoreRead });
                     }
-                    packSend.Last().StorageSize = attr.Addr-packSend.Last().Start+storageSize;
+                    else
+                    {
+                        if (packSend.Last().IgnoreSend)
+                        {
+                            packSend.Add(new ModBusSendTag { Start = storage.Addr, IgnoreSend = storage.IgnoreRead });
+                        }
+                        else if (storage.Addr - packSend.Last().Start + 1 + storageSize > packLength)
+                        {
+                            packSend.Add(new ModBusSendTag { Start = storage.Addr, IgnoreSend = storage.IgnoreRead });
+                        }
+                    }
+                    packSend.Last().StorageSize = storage.Addr-packSend.Last().Start+storageSize;
                     packSend.Last().FieldCount += 1;
                     
                 }
@@ -57,9 +64,11 @@ namespace ModBusORM
                         Title = attr.Name,
                         FieldLength = props[i].PropertyType.GetByteSize(),
                         FieldType = props[i].PropertyType,
+                        IgnoreRead=attr.IgnoreRead,
                     };
                     lstStorage.Add(storage);
                 }
+                lstStorage= lstStorage.OrderBy(x => x.Addr).ToList();
             }
             return lstStorage;
         }

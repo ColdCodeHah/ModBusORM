@@ -101,6 +101,15 @@ namespace ModBusORM
                 var storageOffset = 0;
                 foreach (var s in packSends)
                 {
+                    if (s.IgnoreSend)
+                    {
+                        for(var i = 0; i < s.StorageSize*2; i++)
+                        {
+                            packReceive.Add(0xff);                            
+                        }
+                        storageOffset += s.FieldCount;
+                        continue;
+                    }
                     byte[] bySend = _iProtocol.GetRead03Data(DeviceAddress,s.Start,s.StorageSize.ToString(),CRCType,ref _tcpFlag);
                     _con.Com.Write(bySend);
 
@@ -114,21 +123,20 @@ namespace ModBusORM
                         {
                             var offset = (storages[i].Addr - startAddr) * 2;
                             lstValue.AddRange(ConvertHelper.GetArrayByPos(byValue,offset,storages[i].FieldLength));
-                        }
-                        storageOffset += s.FieldCount;
-                        packReceive.AddRange(lstValue);
+                        }                        
+                        packReceive.AddRange(lstValue);                        
                     }
-
+                    storageOffset += s.FieldCount;
                     Thread.Sleep(5);
                 }
                 if (packReceive.Count == type.GetByteSize())
                 {
-                    packReceive = ModBusHelper.ExchangeOrder(packReceive, 0, ByteOrder, type);
+                    packReceive = ModBusHelper.ExchangeOrder(packReceive, 0, ByteOrder, storages);
                     byte[] byRe = packReceive.ToArray();
                     return (TStorage)ConvertHelper.BytesToStuct(byRe, type);
                 }
             }
-
+            Console.WriteLine(_con.ComNo);
             throw new ComException("未读取到数据");
         }
 
@@ -164,6 +172,15 @@ namespace ModBusORM
             if (prop != null)
                 return _write(prop, value);
             throw new ComException($"结构体不存在{paraName}属性");
+        }
+
+        public byte[] WriteCurstomCommand(byte[] command,int returnLength)
+        {
+            ready();
+            var returnValue = new byte[returnLength];
+            _con.Com.Write(command);
+            returnValue= _con.Com.Read(returnLength);
+            return returnValue;
         }
 
         private object _write(PropertyInfo prop,object value)
