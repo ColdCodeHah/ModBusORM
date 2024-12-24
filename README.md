@@ -5,7 +5,7 @@
 
 ## 使用方法
 
-1、新建寄存器地址表模型
+1、新建寄存器地址表结构体
 ```C#
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct Device1
